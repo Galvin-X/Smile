@@ -1,10 +1,13 @@
 from flask import Flask, render_template, request, session, redirect
 import sqlite3
 from sqlite3 import Error
+from flask_bcrypt import Bcrypt
+
 
 DB_NAME = "smile.db"
 
 app = Flask(__name__)
+bcrypt = Bcrypt(app)
 app.secret_key = "@*#(!HbJ@#LKJyl,!@#*aSDd**)sHdgsC^ExA&^*@#L!@#uiyoy:EWzA)R(_IAO:SD<?xiVqH{}#@$)_#(@)_IqI!"
 
 
@@ -65,8 +68,13 @@ def render_login_page():
         except IndexError:
             return redirect('/login?error=Email+or+password+incorrect')
 
-        if db_password != pass1:
-            return redirect('/login?error=Email+or+password+incorrect')
+        # Check hashed password against entered password
+
+        if not bcrypt.check_password_hash(db_password, pass1):
+            return redirect(request.referrer + '?error=Email+or+password+incorrect')
+
+        #if db_password != pass1:
+        #    return redirect('/login?error=Email+or+password+incorrect')
 
         session['email'] = email
         session['userid'] = userid
@@ -99,6 +107,9 @@ def render_signup_page():
         if len(pass1) < 8:
             return redirect('/signup?error=Passwords+must+be+8+characters+or+more')
 
+        # Hash Password
+        hashed_pass = bcrypt.generate_password_hash(pass1)
+
         # Connect to DB
         con = create_connection(DB_NAME)
 
@@ -107,7 +118,7 @@ def render_signup_page():
         # Execute query
         cur = con.cursor()
         try:
-            cur.execute(query, (fname, lname, email, pass1))
+            cur.execute(query, (fname, lname, email, hashed_pass))
         except sqlite3.IntegrityError:
             return redirect('/signup?error=Email+is+already+used')
         con.commit()

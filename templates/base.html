@@ -15,10 +15,16 @@
     <div class="container">
         <div class="navbar-brand">smile.</div>
         <div class="navbar-links">
-            <a href="/">home</a>
-            <a href="/menu">menu</a>
-            <a href="/contact">contact</a>
-            <a href="/login">login</a>
+            <a href="/">home</a> &#8226;
+            <a href="/menu">menu</a> &#8226;
+            <a href="/contact">contact</a> &#8226;
+
+            {% if logged_in %}
+                <a href="/logout">log out</a>
+            {% else %}
+                <a href="/login">log in</a>
+            {% endif %}
+
         </div>
     </div>
 </nav>

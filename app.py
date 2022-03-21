@@ -2,6 +2,7 @@ from flask import Flask, render_template, request, session, redirect
 import sqlite3
 from sqlite3 import Error
 from flask_bcrypt import Bcrypt
+from datetime import datetime
 
 
 DB_NAME = "smile.db"
@@ -14,6 +15,7 @@ app.secret_key = "@*#(!HbJ@#LKJyl,!@#*aSDd**)sHdgsC^ExA&^*@#L!@#uiyoy:EWzA)R(_IA
 def create_connection(db_file):
     try:
         connection = sqlite3.connect(db_file)
+        connection.execute('pragma foreign_keys=ON')
         return connection
     except Error as e:
         print(e)
@@ -30,7 +32,7 @@ def render_homepage():
 def render_menu_page():
     con = create_connection(DB_NAME)
 
-    query = "SELECT name, description, volume, image, price FROM product"
+    query = "SELECT id, name, description, volume, image, price FROM product"
 
     cur = con.cursor()
     cur.execute(query)
@@ -82,6 +84,79 @@ def render_login_page():
         print(session)
         return redirect('/')
     return render_template('login.html', logged_in=is_logged_in())
+
+@app.route('/addtocart/<productid>')
+def addtocart(productid):
+    userid = session['userid']
+    timestamp = datetime.now()
+
+    print(f"User {userid} would like to add {productid} to cart at {timestamp}")
+
+    query = "INSERT INTO cart(id,userid,productid,timestamp) VALUES (NULL,?,?,?)"
+    con = create_connection(DB_NAME)
+    cur = con.cursor()
+
+    # Catch insertion errors
+    try:
+        cur.execute(query, (userid, productid, timestamp))
+    except sqlite3.IntegrityError as e:
+        print(e)
+        print("### PROBLEM INSERTING INTO DATABASE - FOREIGN KEY ###")
+        con.close()
+        return redirect('/menu?error=Something+went+wrong')
+
+    con.commit()
+    con.close()
+
+    return redirect('/menu')
+
+@app.route('/cart')
+def render_cart():
+    userid = session['userid']
+
+    query = "SELECT productid FROM cart WHERE userid=?;"
+    con = create_connection(DB_NAME)
+    cur = con.cursor()
+    cur.execute(query, (userid, ))
+    product_ids = cur.fetchall()
+
+    for i in range(len(product_ids)):
+        product_ids[i] = product_ids[i][0]
+    print(product_ids)
+
+    unique_product_ids = list(set(product_ids))
+
+    for i in range(len(unique_product_ids)):
+        product_count = product_ids.count(unique_product_ids[i])
+        unique_product_ids[i] = [unique_product_ids[i], product_count]
+    print(unique_product_ids)
+
+    query = """SELECT name, price FROM product WHERE id = ?;"""
+    for item in unique_product_ids:
+        cur.execute(query, item[0])
+        item_details = cur.fetchall()
+        print(item_details)
+        item.append(item_details[0][0])
+        item.append(item_details[0][1])
+
+    con.close()
+    print(unique_product_ids)
+
+    return render_template('cart.html', cart_data=unique_product_ids, logged_in=is_logged_in())
+
+
+@app.route('/removefromcart/<productid>')
+def remove_from_cart(productid):
+    print(f"Remove: {productid}")
+
+    query = "DELETE FROM cart WHERE productid=?;"
+    con = create_connection(DB_NAME)
+    cur = con.cursor()
+    cur.execute(query, (productid,))
+    con.commit()
+    con.close()
+
+    return redirect('/cart')
 
 
 @app.route('/signup', methods=['GET', 'POST'])

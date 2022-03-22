@@ -10,17 +10,18 @@
             <td>Quantity</td>
             <td>Price</td>
             <td>Item Total</td>
-            <td>Remove One</td>
+            <td></td>
         </tr>
     </thread>
     <tbody>
+    {% set ns=namespace(total = 0) %}
     {% for item in cart_data %}
     <tr>
         <td>{{ item[2] }}</td>
         <td>{{ item[1] }}</td>
         <td>${{ "{:.2f}".format(item[3]) }}</td>
         <td>${{ "{:.2f}".format(item[3] * item[1]) }}</td>
-        <td><a href="/removeonefromcart/{{ item[0] }}">X</a></td>
+        <td><a href="/removefromcart/{{ item[0] }}">X</a></td>
         {% set ns.total = ns.total + item[3] * item[1] %}
     </tr>
     {% endfor %}
@@ -29,7 +30,7 @@
         <td></td>
         <td></td>
         <td class="cart-total">${{ "{:.2f}".format(ns.total) }}</td>
-        <td></td>
+        <td><a href="/confirmorder">Confirm</a></td>
     </tr>
     </tbody>
 </table>

@@ -87,6 +87,9 @@ def render_login_page():
 
 @app.route('/addtocart/<productid>')
 def addtocart(productid):
+    if not is_logged_in():
+        return redirect('/')
+
     userid = session['userid']
     timestamp = datetime.now()
 
@@ -110,8 +113,12 @@ def addtocart(productid):
 
     return redirect('/menu')
 
+
 @app.route('/cart')
 def render_cart():
+    if not is_logged_in():
+        return redirect('/')
+
     userid = session['userid']
 
     query = "SELECT productid FROM cart WHERE userid=?;"
@@ -119,6 +126,10 @@ def render_cart():
     cur = con.cursor()
     cur.execute(query, (userid, ))
     product_ids = cur.fetchall()
+
+    # Redirect if cart is empty
+    if len(product_ids) <= 0:
+        return redirect('/')
 
     for i in range(len(product_ids)):
         product_ids[i] = product_ids[i][0]
@@ -133,7 +144,7 @@ def render_cart():
 
     query = """SELECT name, price FROM product WHERE id = ?;"""
     for item in unique_product_ids:
-        cur.execute(query, item[0])
+        cur.execute(query, (item[0],))
         item_details = cur.fetchall()
         print(item_details)
         item.append(item_details[0][0])
@@ -143,6 +154,22 @@ def render_cart():
     print(unique_product_ids)
 
     return render_template('cart.html', cart_data=unique_product_ids, logged_in=is_logged_in())
+
+
+@app.route('/confirmorder')
+def confirmorder():
+    if not is_logged_in():
+        return redirect('/')
+
+    userid = session['userid']
+    con = create_connection(DB_NAME)
+    cur = con.cursor()
+
+    query = "DELETE FROM cart WHERE userid=?;"
+    cur.execute(query, (userid,))
+    con.commit()
+    con.close()
+    return redirect('/?message=Order+complete')
 
 
 @app.route('/removefromcart/<productid>')

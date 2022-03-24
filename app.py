@@ -4,7 +4,6 @@ from sqlite3 import Error
 from flask_bcrypt import Bcrypt
 from datetime import datetime
 
-
 DB_NAME = "smile.db"
 
 app = Flask(__name__)
@@ -47,7 +46,7 @@ def render_contact_page():
     return render_template('contact.html', logged_in=is_logged_in())
 
 
-@app.   route('/login', methods=['GET', 'POST'])
+@app.route('/login', methods=['GET', 'POST'])
 def render_login_page():
     if is_logged_in():
         return redirect('/')
@@ -75,7 +74,7 @@ def render_login_page():
         if not bcrypt.check_password_hash(db_password, pass1):
             return redirect(request.referrer + '?error=Email+or+password+incorrect')
 
-        #if db_password != pass1:
+        #   if db_password != pass1:
         #    return redirect('/login?error=Email+or+password+incorrect')
 
         session['email'] = email
@@ -84,6 +83,7 @@ def render_login_page():
         print(session)
         return redirect('/')
     return render_template('login.html', logged_in=is_logged_in())
+
 
 @app.route('/addtocart/<productid>')
 def addtocart(productid):
@@ -124,7 +124,7 @@ def render_cart():
     query = "SELECT productid FROM cart WHERE userid=?;"
     con = create_connection(DB_NAME)
     cur = con.cursor()
-    cur.execute(query, (userid, ))
+    cur.execute(query, (userid,))
     product_ids = cur.fetchall()
 
     # Redirect if cart is empty
